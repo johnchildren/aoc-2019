@@ -56,3 +56,13 @@ executable day4
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
   hs-source-dirs:      day4
+
+executable day5
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      day5
+
+executable day6
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      day6
