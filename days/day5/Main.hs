@@ -5,7 +5,9 @@ where
 
 import qualified Data.Text.IO                  as Text
 import qualified Data.Vector                   as Vector
-import           IntCode                       (parse, run)
+import           IntCode                                  ( parse
+                                                          , run
+                                                          )
 
 main :: IO ()
 main = do

@@ -1,4 +1,7 @@
-module Main (main) where
+module Main
+  ( main
+  )
+where
 
 import           Data.Text                                ( Text )
 import qualified Data.Text                     as Text
@@ -84,14 +87,14 @@ parse s =
  where
   parseMove :: Text -> Move
   parseMove m =
-    Move (parseDirection $ Text.head m) (read @Int . Text.unpack $ Text.tail m)
+    Move (parseDirection $ Text.head m) (read@Int . Text.unpack $ Text.tail m)
 
   parseDirection :: Char -> Direction
   parseDirection 'U' = U
   parseDirection 'D' = D
   parseDirection 'L' = L
   parseDirection 'R' = R
-  parseDirection c = error ("unknown direction: " ++ show c)
+  parseDirection c   = error ("unknown direction: " ++ show c)
 
 main :: IO ()
 main = do

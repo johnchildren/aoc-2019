@@ -1,4 +1,7 @@
-module Main (main) where
+module Main
+  ( main
+  )
+where
 
 import qualified Data.Text.IO                  as Text
 import           Data.Vector                              ( (!)
@@ -6,10 +9,13 @@ import           Data.Vector                              ( (!)
                                                           , Vector
                                                           )
 import qualified Data.Vector                   as Vector
-import           IntCode                       (parse, run)
+import           IntCode                                  ( parse
+                                                          , run
+                                                          )
 
 testParams :: Vector Int -> (Int, Int) -> Int
-testParams program (noun, verb) = (snd $ run (program // [(1, noun), (2, verb)]) Vector.empty) ! 0
+testParams program (noun, verb) =
+  (snd $ run (program // [(1, noun), (2, verb)]) Vector.empty) ! 0
 
 main :: IO ()
 main = do

@@ -1,4 +1,7 @@
-module Main (main) where
+module Main
+  ( main
+  )
+where
 
 -- Validate that there are two adjacent identical digits
 hasIdentical :: Int -> Bool
