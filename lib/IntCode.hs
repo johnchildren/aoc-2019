@@ -1,17 +1,7 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
-
-module Main
-  ( main
-  )
-where
+module IntCode (parse, run) where
 
 import           Data.Text                                ( Text )
 import qualified Data.Text                     as Text
-import qualified Data.Text.IO                  as Text
 import           Data.Vector                              ( (!?)
                                                           , (//)
                                                           , Vector
@@ -152,14 +142,3 @@ readInstr p prog
 
 parse :: Text -> Vector Int
 parse s = Vector.fromList $ read @Int . Text.unpack <$> Text.splitOn "," s
-
-main :: IO ()
-main = do
-  input <- Text.readFile "day5/input.txt"
-  let program = parse input
-
-  putStr "part1: "
-  print $ fst $ run program (Vector.singleton 1)
-
-  putStr "part2: "
-  print $ fst $ run program (Vector.singleton 5)

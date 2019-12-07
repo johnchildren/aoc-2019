@@ -1,8 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
-
-module Main where
+module Main (main) where
 
 import           Data.Text                                ( Text )
 import qualified Data.Text                     as Text
@@ -10,8 +6,6 @@ import qualified Data.Text.IO                  as Text
 import qualified Data.List                     as List
 import           Data.IntMap                              ( IntMap )
 import qualified Data.IntMap                   as IntMap
-import           Data.IntSet                              ( IntSet )
-import qualified Data.IntSet                   as IntSet
 
 data Direction = U | D | R | L
   deriving (Show)
@@ -89,18 +83,19 @@ parse s =
   in  (head allWires, head $ tail allWires) -- take only the first two
  where
   parseMove :: Text -> Move
-  parseMove s =
-    Move (parseDirection $ Text.head s) (read @Int . Text.unpack $ Text.tail s)
+  parseMove m =
+    Move (parseDirection $ Text.head m) (read @Int . Text.unpack $ Text.tail m)
 
   parseDirection :: Char -> Direction
   parseDirection 'U' = U
   parseDirection 'D' = D
   parseDirection 'L' = L
   parseDirection 'R' = R
+  parseDirection c = error ("unknown direction: " ++ show c)
 
 main :: IO ()
 main = do
-  input <- Text.readFile "day3/input.txt"
+  input <- Text.readFile "days/day3/input.txt"
   let (wire1, wire2) = parse input
   let grid1          = plotRoute ((0, 0), 0) wire1
   let grid2          = plotRoute ((0, 0), 0) wire2

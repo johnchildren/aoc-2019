@@ -1,6 +1,4 @@
-{-# LANGUAGE TypeApplications #-}
-
-module Main where
+module Main (main) where
 
 -- Fuel required to launch a given module is based on its mass.
 -- Specifically, to find the fuel required for a module, take its mass,
@@ -19,7 +17,7 @@ fuel2 mass =
 
 main :: IO ()
 main = do
-  input <- readFile "day1/input.txt"
+  input <- readFile "days/day1/input.txt"
   let masses     = read @Int <$> lines input
   let totalFuel1 = foldl (\f m -> f + fuel1 m) 0 masses
   putStr "part1: "

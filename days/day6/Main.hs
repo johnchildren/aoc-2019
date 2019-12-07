@@ -61,7 +61,7 @@ parse s =
 
 main :: IO ()
 main = do
-  input <- Text.readFile "day6/input.txt"
+  input <- Text.readFile "days/day6/input.txt"
 
   let orbits    = parse input
   let orbitTree = buildOrbitTree orbits

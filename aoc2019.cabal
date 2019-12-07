@@ -22,6 +22,7 @@ common haskell
     OverloadedStrings
     TypeApplications
     GADTs
+    ViewPatterns
 
 common dependencies
   build-depends:
@@ -37,32 +38,46 @@ common warning-flags
     -Wmissing-export-lists -Wpartial-fields -Wincomplete-patterns
     -Wmonomorphism-restriction -Wmissing-local-signatures
 
+library
+  import:              haskell, dependencies, warning-flags
+  hs-source-dirs:      lib
+  exposed-modules:     IntCode
+
+test-suite test
+  import:              haskell, dependencies, warning-flags
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  hs-source-dirs:      tests
+  build-depends:       aoc2019
+
 executable day1
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
-  hs-source-dirs:      day1
+  hs-source-dirs:      days/day1
 
 executable day2
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
-  hs-source-dirs:      day1
+  hs-source-dirs:      days/day2
+  build-depends:       aoc2019
 
 executable day3
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
-  hs-source-dirs:      day3
+  hs-source-dirs:      days/day3
 
 executable day4
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
-  hs-source-dirs:      day4
+  hs-source-dirs:      days/day4
 
 executable day5
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
-  hs-source-dirs:      day5
+  hs-source-dirs:      days/day5
+  build-depends:       aoc2019
 
 executable day6
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
-  hs-source-dirs:      day6
+  hs-source-dirs:      days/day6
