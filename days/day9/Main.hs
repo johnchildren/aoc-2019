@@ -18,4 +18,4 @@ main = do
   print $ fst $ run program (Vector.singleton 1)
 
   putStr "part2: "
-  print $ fst $ run program (Vector.singleton 5)
+  print $ fst $ run program (Vector.singleton 2)

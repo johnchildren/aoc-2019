@@ -12,7 +12,7 @@ import           IntCode                                  ( parse
                                                           , run
                                                           , runInput
                                                           , runPropagate
-                                                          , Pointer(..)
+                                                          , ProgState
                                                           )
 
 thrust :: Vector Int -> [Int] -> Int
@@ -22,21 +22,21 @@ thrust program =
 thrustPropagated :: Vector Int -> [Int] -> Int
 thrustPropagated initialProg config = fst $ go 0 initialAmps
  where
-  initialAmps :: [Maybe (Pointer, Vector Int)]
+  initialAmps :: [Maybe ProgState]
   initialAmps = (\x -> runInput x initialProg) <$> config
 
-  go :: Int -> [Maybe (Pointer, Vector Int)] -> (Int, [Maybe (Pointer, Vector Int)])
+  go :: Int -> [Maybe ProgState] -> (Int, [Maybe ProgState])
   go sig (catMaybes -> []) = (sig, [])
   go sig amps              = (uncurry go) (pass sig amps)
 
-  pass :: Int -> [Maybe (Pointer, Vector Int)] -> (Int, [Maybe (Pointer, Vector Int)])
+  pass :: Int -> [Maybe ProgState] -> (Int, [Maybe ProgState])
   pass sig amps = List.mapAccumL runAmp sig amps
 
-  runAmp :: Int -> Maybe (Pointer, Vector Int) -> (Int, Maybe (Pointer, Vector Int))
-  runAmp sig Nothing          = (sig, (Nothing))
-  runAmp sig (Just (p, prog)) = case runPropagate sig (p, prog) of
-    Just (sigOut, newP, newProg) -> (sigOut, Just (newP, newProg))
-    Nothing                      -> (sig, Nothing)
+  runAmp :: Int -> Maybe ProgState -> (Int, Maybe ProgState)
+  runAmp sig Nothing   = (sig, Nothing)
+  runAmp sig (Just st) = case runPropagate sig st of
+    Just (sigOut, stateOut) -> (sigOut, Just stateOut)
+    Nothing                 -> (sig, Nothing)
 
 main :: IO ()
 main = do
