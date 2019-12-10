@@ -21,7 +21,7 @@ fuel2 mass =
 main :: IO ()
 main = do
   input <- readFile "days/day1/input.txt"
-  let masses     = read@Int <$> lines input
+  let masses     = read @Int <$> lines input
   let totalFuel1 = foldl (\f m -> f + fuel1 m) 0 masses
   putStr "part1: "
   print totalFuel1

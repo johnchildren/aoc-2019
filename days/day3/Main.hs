@@ -87,7 +87,7 @@ parse s =
  where
   parseMove :: Text -> Move
   parseMove m =
-    Move (parseDirection $ Text.head m) (read@Int . Text.unpack $ Text.tail m)
+    Move (parseDirection $ Text.head m) (read @Int . Text.unpack $ Text.tail m)
 
   parseDirection :: Char -> Direction
   parseDirection 'U' = U

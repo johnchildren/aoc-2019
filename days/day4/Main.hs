@@ -29,13 +29,13 @@ hasExactIdentical n = hasExactIdentical' (n, 10, 0)
  where
   hasExactIdentical' :: (Int, Int, Int) -> Bool
   hasExactIdentical' (0, _, t) = if t == 1 then True else False
-  hasExactIdentical' (d, l, t)
-    = let (remaining, lastDigit) = quotRem d 10
-      in  if lastDigit == l
-            then hasExactIdentical' (remaining, lastDigit, t + 1)
-            else if t == 1
-              then True
-              else hasExactIdentical' (remaining, lastDigit, 0)
+  hasExactIdentical' (d, l, t) =
+    let (remaining, lastDigit) = quotRem d 10
+    in  if lastDigit == l
+          then hasExactIdentical' (remaining, lastDigit, t + 1)
+          else if t == 1
+            then True
+            else hasExactIdentical' (remaining, lastDigit, 0)
 
 main :: IO ()
 main = do

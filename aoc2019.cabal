@@ -19,17 +19,21 @@ extra-source-files:  CHANGELOG.md
 common haskell
   default-language:   Haskell2010
   default-extensions:
-    OverloadedStrings
-    TypeApplications
+    DeriveFunctor
     GADTs
+    GeneralizedNewtypeDeriving 
+    LambdaCase
+    OverloadedStrings
+    StandaloneDeriving
+    TypeApplications
     ViewPatterns
 
 common dependencies
   build-depends:
-    , base           >=4.9 && <5.0
-    , text           ^>=1.2
-    , vector         ^>=0.12
-    , containers     ^>=0.6
+    , base           ==4.12.0.0
+    , text           ==1.2.4.0
+    , vector         ==0.12.0.3
+    , containers     ==0.6.2.1
 
 common warning-flags
   ghc-options:
@@ -49,6 +53,8 @@ test-suite test
   main-is:             Main.hs
   hs-source-dirs:      tests
   build-depends:       aoc2019
+                     , tasty          ==1.2
+                     , tasty-hunit    ==0.10
 
 executable day1
   import:              haskell, dependencies, warning-flags
@@ -81,3 +87,9 @@ executable day6
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
   hs-source-dirs:      days/day6
+
+executable day7
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day7
+  build-depends:       aoc2019
