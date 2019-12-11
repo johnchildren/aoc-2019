@@ -23,7 +23,7 @@ thrustPropagated :: Vector Int -> [Int] -> Int
 thrustPropagated initialProg config = fst $ go 0 initialAmps
  where
   initialAmps :: [Maybe ProgState]
-  initialAmps = (`runInput` initialProg) <$> config
+  initialAmps = (`runInput` (0, 0, initialProg)) <$> config
 
   go :: Int -> [Maybe ProgState] -> (Int, [Maybe ProgState])
   go sig (catMaybes -> []) = (sig, [])

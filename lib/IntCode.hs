@@ -2,6 +2,7 @@ module IntCode
   ( parse
   , run
   , runInput
+  , runOutput
   , runPropagate
   , ProgState
   , Pointer(..)
@@ -9,6 +10,9 @@ module IntCode
   )
 where
 
+import           Data.Bifunctor                           ( Bifunctor
+                                                          , bimap
+                                                          )
 import           Data.Text                                ( Text )
 import qualified Data.Text                     as Text
 import           Data.Vector                              ( (!?)
@@ -21,13 +25,13 @@ type Program = Vector Int
 type Updates = [(Pointer, Int)]
 
 newtype Pointer = Pointer Int
-  deriving (Show, Num)
+  deriving newtype (Show, Num)
 
 newtype Offset = Offset Int
-  deriving (Show, Num)
+  deriving newtype (Show, Num)
 
 newtype RelativeBase = RelativeBase Pointer
-  deriving (Show, Num)
+  deriving newtype (Show, Num)
 
 type ProgState = (RelativeBase, Pointer, Program)
 
@@ -40,24 +44,37 @@ data Mode = Position Pointer | Immediate Int | Relative Offset
 data WriteLocation = WritePosition Pointer | WriteRelative Offset
   deriving (Show)
 
--- TODO: make this a bifunctor
-data Instr a where
-  Add ::a -> a -> WriteLocation -> Instr a
-  Mul ::a -> a -> WriteLocation -> Instr a
-  Input ::WriteLocation -> Instr a
-  Output ::a -> Instr a
-  JumpIfTrue ::a -> a -> Instr a
-  JumpIfFalse ::a -> a -> Instr a
-  LessThan ::a -> a -> WriteLocation -> Instr a
-  Equals ::a -> a -> WriteLocation -> Instr a
-  AdjustBase ::a -> Instr a
-  Terminate ::Instr a
+data Instr arg write where
+  Add ::arg -> arg -> write -> Instr arg write
+  Mul ::arg -> arg -> write -> Instr arg write
+  Input ::write -> Instr arg write
+  Output ::arg -> Instr arg write
+  JumpIfTrue ::arg -> arg -> Instr arg write
+  JumpIfFalse ::arg -> arg -> Instr arg write
+  LessThan ::arg -> arg -> write -> Instr arg write
+  Equals ::arg -> arg -> write -> Instr arg write
+  AdjustBase ::arg -> Instr arg write
+  Terminate ::Instr arg write
 
-deriving instance Functor Instr
-deriving instance (Show a) => Show (Instr a)
+deriving stock instance (Show a, Show b) => Show (Instr a b)
+
+instance Bifunctor Instr where
+  bimap f g (Add arg1 arg2 wr     ) = Add (f arg1) (f arg2) (g wr)
+  bimap f g (Mul arg1 arg2 wr     ) = Mul (f arg1) (f arg2) (g wr)
+  bimap _ g (Input  wr            ) = Input (g wr)
+  bimap f _ (Output arg1          ) = Output (f arg1)
+  bimap f _ (JumpIfTrue  arg1 arg2) = JumpIfTrue (f arg1) (f arg2)
+  bimap f _ (JumpIfFalse arg1 arg2) = JumpIfFalse (f arg1) (f arg2)
+  bimap f g (LessThan arg1 arg2 wr) = LessThan (f arg1) (f arg2) (g wr)
+  bimap f g (Equals   arg1 arg2 wr) = Equals (f arg1) (f arg2) (g wr)
+  bimap f _ (AdjustBase arg1      ) = AdjustBase (f arg1)
+  bimap _ _ Terminate               = Terminate
 
 incPointer :: Pointer -> Offset -> Pointer
 incPointer (Pointer p) (Offset o) = Pointer (p + o)
+
+incBase :: RelativeBase -> Offset -> RelativeBase
+incBase (RelativeBase r) offset = RelativeBase (incPointer r offset)
 
 updateProgram :: Program -> Updates -> Program
 updateProgram prog updates = prog // ((\(Pointer p, v) -> (p, v)) <$> updates)
@@ -71,60 +88,38 @@ evalArg prog _                (Position  p) = readValue prog p 0
 evalArg _    _                (Immediate i) = i
 evalArg prog (RelativeBase b) (Relative  r) = readValue prog b r
 
+evalWrite :: RelativeBase -> WriteLocation -> Pointer
+evalWrite _                (WritePosition p) = p
+evalWrite (RelativeBase b) (WriteRelative r) = incPointer b r
+
 -- Can't just use Functor as write location arguments must be positions
-evalInstr :: Program -> RelativeBase -> Instr Mode -> Instr Int
-evalInstr prog b = fmap (evalArg prog b)
+evalInstr
+  :: Program -> RelativeBase -> Instr Mode WriteLocation -> Instr Int Pointer
+evalInstr prog b = bimap (evalArg prog b) (evalWrite b)
 
 -- Step once the values of instructions have been found
 step
-  :: RelativeBase
-  -> Pointer
-  -> Instr Int
+  :: Pointer
+  -> Instr Int Pointer
   -> Maybe Int
-  -> (RelativeBase, Pointer, Maybe Int, Updates)
-step b p Terminate _ = (b, p, Nothing, [])
-
-step b p (Add arg1 arg2 (WritePosition arg3)) _ =
-  (b, incPointer p 4, Nothing, [(arg3, arg1 + arg2)])
-step b p (Mul arg1 arg2 (WritePosition arg3)) _ =
-  (b, incPointer p 4, Nothing, [(arg3, arg1 * arg2)])
-
-step b@(RelativeBase base) p (Add arg1 arg2 (WriteRelative arg3)) _ =
-  (b, incPointer p 4, Nothing, [(incPointer base arg3, arg1 + arg2)])
-step b@(RelativeBase base) p (Mul arg1 arg2 (WriteRelative arg3)) _ =
-  (b, incPointer p 4, Nothing, [(incPointer base arg3, arg1 * arg2)])
-
-step b p (Input (WritePosition arg1)) (Just input) =
-  (b, incPointer p 2, Nothing, [(arg1, input)])
-step b@(RelativeBase base) p (Input (WriteRelative arg1)) (Just input) =
-  (b, incPointer p 2, Nothing, [(incPointer base arg1, input)])
-
-step b p (Output arg1) _ = (b, incPointer p 2, Just arg1, [])
-step b p (JumpIfTrue arg1 arg2) _ =
-  (b, if arg1 /= 0 then Pointer arg2 else incPointer p 3, Nothing, [])
-step b p (JumpIfFalse arg1 arg2) _ =
-  (b, if arg1 == 0 then Pointer arg2 else incPointer p 3, Nothing, [])
-
-step b p (LessThan arg1 arg2 (WritePosition arg3)) _ =
-  (b, incPointer p 4, Nothing, [(arg3, if arg1 < arg2 then 1 else 0)])
-step b p (Equals arg1 arg2 (WritePosition arg3)) _ =
-  (b, incPointer p 4, Nothing, [(arg3, if arg1 == arg2 then 1 else 0)])
-
-step b@(RelativeBase base) p (LessThan arg1 arg2 (WriteRelative arg3)) _ =
-  ( b
-  , incPointer p 4
-  , Nothing
-  , [(incPointer base arg3, if arg1 < arg2 then 1 else 0)]
-  )
-step b@(RelativeBase base) p (Equals arg1 arg2 (WriteRelative arg3)) _ =
-  ( b
-  , incPointer p 4
-  , Nothing
-  , [(incPointer base arg3, if arg1 == arg2 then 1 else 0)]
-  )
-
-step (RelativeBase base) p (AdjustBase arg1) _ =
-  (RelativeBase (incPointer base (Offset arg1)), incPointer p 2, Nothing, [])
+  -> (Offset, Pointer, Maybe Int, Updates)
+step p Terminate _ = (0, p, Nothing, [])
+step p (Add arg1 arg2 arg3) _ =
+  (0, incPointer p 4, Nothing, [(arg3, arg1 + arg2)])
+step p (Mul arg1 arg2 arg3) _ =
+  (0, incPointer p 4, Nothing, [(arg3, arg1 * arg2)])
+step p (Input arg1) (Just input) =
+  (0, incPointer p 2, Nothing, [(arg1, input)])
+step p (Output arg1) _ = (0, incPointer p 2, Just arg1, [])
+step p (JumpIfTrue arg1 arg2) _ =
+  (0, if arg1 /= 0 then Pointer arg2 else incPointer p 3, Nothing, [])
+step p (JumpIfFalse arg1 arg2) _ =
+  (0, if arg1 == 0 then Pointer arg2 else incPointer p 3, Nothing, [])
+step p (LessThan arg1 arg2 arg3) _ =
+  (0, incPointer p 4, Nothing, [(arg3, if arg1 < arg2 then 1 else 0)])
+step p (Equals arg1 arg2 arg3) _ =
+  (0, incPointer p 4, Nothing, [(arg3, if arg1 == arg2 then 1 else 0)])
+step p (AdjustBase arg1) _ = (Offset arg1, incPointer p 2, Nothing, [])
 
 run :: Program -> Input -> (Output, Program)
 run initialProg input =
@@ -140,36 +135,43 @@ run initialProg input =
   go _ _ (i, o, prog@(Vector.null -> True)     ) = (i, o, prog)
   go _ p (i, o, prog@(readInstr p -> Terminate)) = (i, o, prog)
   go b p (i, o, prog@(evalInstr prog b . readInstr p -> instr@(Input _))) =
-    let (newB, newP, _, updates) = step b p instr (Just (Vector.head i))
-    in  go newB newP (Vector.tail i, o, updateProgram prog updates)
+    let (bOffset, newP, _, updates) = step p instr (Just (Vector.head i))
+    in  go (incBase b bOffset)
+           newP
+           (Vector.tail i, o, updateProgram prog updates)
   go b p (i, o, prog@(evalInstr prog b . readInstr p -> instr)) =
-    case step b p instr Nothing of
-      (newB, newP, Nothing, updates) ->
-        go newB newP (i, o, updateProgram prog updates)
-      (newB, newP, Just output, updates) ->
-        go newB newP (i, o `Vector.snoc` output, updateProgram prog updates)
+    case step p instr Nothing of
+      (bOffset, newP, Nothing, updates) ->
+        go (incBase b bOffset) newP (i, o, updateProgram prog updates)
+      (bOffset, newP, Just output, updates) -> go
+        (incBase b bOffset)
+        newP
+        (i, o `Vector.snoc` output, updateProgram prog updates)
 
 -- run with a single input until that input has been read or
 -- the program terminates
-runInput :: Int -> Program -> Maybe ProgState
-runInput input initialProg = go 0 0 (reserveMemory initialProg 2048)
+runInput :: Int -> ProgState -> Maybe ProgState
+runInput input (initialB, initialP, initialProg) = go
+  initialB
+  initialP
+  (reserveMemory initialProg 2048)
  where
   go :: RelativeBase -> Pointer -> Program -> Maybe ProgState
-  go b _ (Vector.null -> True     ) = Nothing
-  go b p (readInstr p -> Terminate) = Nothing
+  go _ _ (Vector.null -> True     ) = Nothing
+  go _ p (readInstr p -> Terminate) = Nothing
   go b p prog@(evalInstr prog b . readInstr p -> instr@(Input _)) =
-    let (newB, newP, _, updates) = step b p instr (Just input)
-    in  Just (newB, newP, updateProgram prog updates)
+    let (bOffset, newP, _, updates) = step p instr (Just input)
+    in  Just (incBase b bOffset, newP, updateProgram prog updates)
   go b p prog@(evalInstr prog b . readInstr p -> instr) =
-    case step b p instr Nothing of
-      (newB, newP, Nothing, updates) ->
-        go newB newP (updateProgram prog updates)
+    case step p instr Nothing of
+      (bOffset, newP, Nothing, updates) ->
+        go (incBase b bOffset) newP (updateProgram prog updates)
       (_, _, Just _, _) -> error "unexpected output"
 
 -- run with a single input until a single output is received or
 -- the program terminates
-runPropagate :: Int -> ProgState -> Maybe (Int, ProgState)
-runPropagate input (initialB, initialP, initialProg) = go
+runOutput :: ProgState -> Maybe (Int, ProgState)
+runOutput (initialB, initialP, initialProg) = go
   initialB
   initialP
   (reserveMemory initialProg 2048)
@@ -177,15 +179,17 @@ runPropagate input (initialB, initialP, initialProg) = go
   go :: RelativeBase -> Pointer -> Program -> Maybe (Int, ProgState)
   go _ _ (Vector.null -> True     ) = Nothing
   go _ p (readInstr p -> Terminate) = Nothing
-  go b p prog@(evalInstr prog b . readInstr p -> instr@(Input _)) =
-    let (newB, newP, _, updates) = step b p instr (Just input)
-    in  go newB newP (updateProgram prog updates)
   go b p prog@(evalInstr prog b . readInstr p -> instr) =
-    case step b p instr Nothing of
-      (newB, newP, Nothing, updates) ->
-        go newB newP (updateProgram prog updates)
-      (newB, newP, Just output, updates) ->
-        Just (output, (newB, newP, updateProgram prog updates))
+    case step p instr Nothing of
+      (bOffset, newP, Nothing, updates) ->
+        go (incBase b bOffset) newP (updateProgram prog updates)
+      (bOffset, newP, Just output, updates) ->
+        Just (output, (incBase b bOffset, newP, updateProgram prog updates))
+
+-- run with a single input until a single output is received or
+-- the program terminates
+runPropagate :: Int -> ProgState -> Maybe (Int, ProgState)
+runPropagate input state = runInput input state >>= runOutput
 
 readArg :: Program -> Pointer -> Offset -> Int -> Mode
 readArg prog p offset@(Offset o) codes =
@@ -207,7 +211,7 @@ readValue prog (Pointer p) (Offset o) = case prog !? (p + o) of
   Nothing ->
     error $ "no value at position: " ++ show p ++ " full prog: " ++ show prog
 
-readInstr :: Pointer -> Program -> Instr Mode
+readInstr :: Pointer -> Program -> Instr Mode WriteLocation
 readInstr p prog = case readValue prog p (Offset 0) `quotRem` 100 of
   (codes, 1) -> Add (readArg prog p 1 codes)
                     (readArg prog p 2 codes)
