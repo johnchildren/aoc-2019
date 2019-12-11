@@ -42,7 +42,8 @@ visibleAsteroids asteroids = map
 circularView :: (Int, Int) -> [(Int, Int)] -> [[(Int, Int)]]
 circularView (ox, oy) asteroids =
   let relativeLocations = (\(x, y) -> (x - ox, y - oy)) <$> asteroids
-  in  reverse $ fmap (fmap fst)
+  in  reverse
+        $ fmap (fmap fst)
         $ fmap (List.sortOn (\(_, v) -> mag v))
         $ List.groupBy (\(_, v1) (_, v2) -> norm v1 == norm v2)
         $ List.sortOn (\(_, (x, y)) -> atan2 (fromIntegral x) (fromIntegral y))
@@ -70,14 +71,16 @@ main :: IO ()
 main = do
   input <- readFile "days/day10/input.txt"
   let asteroids = parse input
-  let (bestLocation, numberVisible) = last $ List.sortOn snd $ zip
-        asteroids
-        (visibleAsteroids asteroids)
+  let (bestLocation, numberVisible) =
+        last $ List.sortOn snd $ zip asteroids (visibleAsteroids asteroids)
 
   putStr "part1: "
   print numberVisible
 
   putStr "part2: "
-  print $ (\(x, y) -> (x * 100) + y) $ (flip (!!)) 200 $ List.concat $ List.transpose $ circularView
-    bestLocation
-    asteroids
+  print
+    $ (\(x, y) -> (x * 100) + y)
+    $ (flip (!!)) 200
+    $ List.concat
+    $ List.transpose
+    $ circularView bestLocation asteroids
