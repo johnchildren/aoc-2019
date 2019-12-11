@@ -27,7 +27,7 @@ emptyGrid :: Grid
 emptyGrid = IntMap.empty
 
 gridUnion :: Grid -> Grid -> Grid
-gridUnion g1 g2 = IntMap.unionWith (IntMap.union) g1 g2
+gridUnion = IntMap.unionWith IntMap.union
 
 gridIntersection :: Grid -> Grid -> Grid
 gridIntersection g1 g2 =
@@ -78,11 +78,11 @@ plotRoute start moves =
   foldl gridUnion emptyGrid $ snd $ List.mapAccumL plotWire start moves
 
 manhattanDistance :: Coordinate -> Int
-manhattanDistance (x, y) = (abs x) + (abs y)
+manhattanDistance (x, y) = abs x + abs y
 
 parse :: Text -> ([Move], [Move])
 parse s =
-  let allWires = (fmap parseMove . Text.splitOn ",") <$> Text.lines s
+  let allWires = fmap parseMove . Text.splitOn "," <$> Text.lines s
   in  (head allWires, head $ tail allWires) -- take only the first two
  where
   parseMove :: Text -> Move
@@ -104,9 +104,9 @@ main = do
   let grid2          = plotRoute ((0, 0), 0) wire2
 
   let intersectionDistances =
-        manhattanDistance <$> (gridCoordinates $ gridIntersection grid1 grid2)
+        manhattanDistance <$> gridCoordinates (gridIntersection grid1 grid2)
 
-  let shortestDistance = head $ List.sort intersectionDistances
+  let shortestDistance = minimum intersectionDistances
   putStr "part1: "
   print shortestDistance
 

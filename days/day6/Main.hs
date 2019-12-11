@@ -28,7 +28,7 @@ type Transfer = Either (Maybe Int, Maybe Int) Int
 
 -- fold the tree and count with some precedence rules
 findTransfer :: Text -> Text -> OrbitTree -> Maybe Int
-findTransfer start end tree = either (const Nothing) (Just)
+findTransfer start end tree = either (const Nothing) Just
   $ foldTree findTransfer' tree
  where
   findTransfer' :: Text -> [Transfer] -> Transfer
@@ -71,6 +71,5 @@ main = do
   putStr "part1: "
   print $ totalOrbits orbitTree
 
-  let transfer = findTransfer "YOU" "SAN" orbitTree
   putStr "part2: "
-  print $ transfer
+  print $ findTransfer "YOU" "SAN" orbitTree

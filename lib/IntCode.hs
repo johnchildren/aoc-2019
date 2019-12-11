@@ -64,7 +64,7 @@ updateProgram prog updates = prog // ((\(Pointer p, v) -> (p, v)) <$> updates)
 
 reserveMemory :: Program -> Int -> Program
 reserveMemory prog size =
-  prog Vector.++ (Vector.replicate (size - Vector.length prog) 0)
+  prog Vector.++ Vector.replicate (size - Vector.length prog) 0
 
 evalArg :: Program -> RelativeBase -> Mode -> Int
 evalArg prog _                (Position  p) = readValue prog p 0
@@ -73,7 +73,7 @@ evalArg prog (RelativeBase b) (Relative  r) = readValue prog b r
 
 -- Can't just use Functor as write location arguments must be positions
 evalInstr :: Program -> RelativeBase -> Instr Mode -> Instr Int
-evalInstr prog b instr = fmap (evalArg prog b) instr
+evalInstr prog b = fmap (evalArg prog b)
 
 -- Step once the values of instructions have been found
 step
@@ -129,7 +129,7 @@ step (RelativeBase base) p (AdjustBase arg1) _ =
 run :: Program -> Input -> (Output, Program)
 run initialProg input =
   let (_, o, finalProg) =
-          go 0 0 (input, Vector.empty, (reserveMemory initialProg 2048))
+          go 0 0 (input, Vector.empty, reserveMemory initialProg 2048)
   in  (o, finalProg)
  where
   go
@@ -159,7 +159,7 @@ runInput input initialProg = go 0 0 (reserveMemory initialProg 2048)
   go b p (readInstr p -> Terminate) = Nothing
   go b p prog@(evalInstr prog b . readInstr p -> instr@(Input _)) =
     let (newB, newP, _, updates) = step b p instr (Just input)
-    in  Just (newB, newP, (updateProgram prog updates))
+    in  Just (newB, newP, updateProgram prog updates)
   go b p prog@(evalInstr prog b . readInstr p -> instr) =
     case step b p instr Nothing of
       (newB, newP, Nothing, updates) ->
@@ -208,7 +208,7 @@ readValue prog (Pointer p) (Offset o) = case prog !? (p + o) of
     error $ "no value at position: " ++ show p ++ " full prog: " ++ show prog
 
 readInstr :: Pointer -> Program -> Instr Mode
-readInstr p prog = case (readValue prog p (Offset 0)) `quotRem` 100 of
+readInstr p prog = case readValue prog p (Offset 0) `quotRem` 100 of
   (codes, 1) -> Add (readArg prog p 1 codes)
                     (readArg prog p 2 codes)
                     (readWriteLocation prog p 3 codes)

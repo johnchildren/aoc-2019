@@ -10,7 +10,7 @@ import qualified Data.Text.IO                  as Text
 
 splitEvery :: Int -> [a] -> [[a]]
 splitEvery _ []   = []
-splitEvery n list = first : (splitEvery n rest)
+splitEvery n list = first : splitEvery n rest
   where (first, rest) = List.splitAt n list
 
 mergeChannel :: Int -> Int -> Int
@@ -38,15 +38,15 @@ main = do
   input <- Text.readFile "days/day8/input.txt"
   let layers       = parse (25, 6) input
 
-  let counts = (fmap List.length . List.group . List.sort) <$> layers
-  let sortedCounts = List.sortOn (\x -> head x) counts
-  let leastZeros   = head $ sortedCounts
+  let counts = fmap List.length . List.group . List.sort <$> layers
+  let sortedCounts = List.sortOn head counts
+  let leastZeros   = head sortedCounts
 
   putStr "part1: "
   print $ (leastZeros !! 1) * (leastZeros !! 2)
 
   let channels  = List.transpose layers
-  let flatImage = (List.foldl' mergeChannel 2) <$> channels
+  let flatImage = List.foldl' mergeChannel 2 <$> channels
 
   putStrLn "part2: "
   putStrLn $ render flatImage

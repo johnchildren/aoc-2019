@@ -23,14 +23,14 @@ thrustPropagated :: Vector Int -> [Int] -> Int
 thrustPropagated initialProg config = fst $ go 0 initialAmps
  where
   initialAmps :: [Maybe ProgState]
-  initialAmps = (\x -> runInput x initialProg) <$> config
+  initialAmps = (`runInput` initialProg) <$> config
 
   go :: Int -> [Maybe ProgState] -> (Int, [Maybe ProgState])
   go sig (catMaybes -> []) = (sig, [])
-  go sig amps              = (uncurry go) (pass sig amps)
+  go sig amps              = uncurry go (pass sig amps)
 
   pass :: Int -> [Maybe ProgState] -> (Int, [Maybe ProgState])
-  pass sig amps = List.mapAccumL runAmp sig amps
+  pass = List.mapAccumL runAmp
 
   runAmp :: Int -> Maybe ProgState -> (Int, Maybe ProgState)
   runAmp sig Nothing   = (sig, Nothing)
@@ -44,13 +44,11 @@ main = do
   let program = parse input
 
   putStr "part1: "
-  let highestSignal1 =
-        List.last $ List.sort $ thrust program <$> List.permutations [0 .. 4]
+  let highestSignal1 = maximum $ thrust program <$> List.permutations [0 .. 4]
   print highestSignal1
 
 
   putStr "part2: "
   let highestSignal2 =
-        List.last $ List.sort $ thrustPropagated program <$> List.permutations
-          [5 .. 9]
+        maximum $ thrustPropagated program <$> List.permutations [5 .. 9]
   print highestSignal2

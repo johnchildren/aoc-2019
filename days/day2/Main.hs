@@ -15,7 +15,7 @@ import           IntCode                                  ( parse
 
 testParams :: Vector Int -> (Int, Int) -> Int
 testParams program (noun, verb) =
-  (snd $ run (program // [(1, noun), (2, verb)]) Vector.empty) ! 0
+  snd (run (program // [(1, noun), (2, verb)]) Vector.empty) ! 0
 
 main :: IO ()
 main = do
@@ -26,7 +26,7 @@ main = do
   let adjustedProgram = program // [(1, 12), (2, 2)]
   Text.putStr "part1: "
   let result = run adjustedProgram Vector.empty
-  print ((snd result) ! 0)
+  print (snd result ! 0)
   let values =
         [ (noun, verb)
         | noun <- [0 .. 99]
