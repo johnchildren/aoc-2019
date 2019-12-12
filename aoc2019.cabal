@@ -111,3 +111,8 @@ executable day10
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
   hs-source-dirs:      days/day10
+
+executable day12
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day12
