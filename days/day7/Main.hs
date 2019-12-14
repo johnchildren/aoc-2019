@@ -9,21 +9,22 @@ import qualified Data.Text.IO                  as Text
 import           Data.Vector                              ( Vector )
 import qualified Data.Vector                   as Vector
 import           IntCode                                  ( parse
-                                                          , run
-                                                          , runInput
-                                                          , runPropagate
+                                                          , runStack
                                                           , ProgState
                                                           )
 
 thrust :: Vector Int -> [Int] -> Int
-thrust program =
-  foldl' (\x y -> Vector.head $ fst $ run program (Vector.fromList [y, x])) 0
+thrust program = foldl'
+  (\x y -> Vector.head $ fst $ runStack (Vector.fromList [y, x]) (0, 0, program)
+  )
+  0
 
 thrustPropagated :: Vector Int -> [Int] -> Int
 thrustPropagated initialProg config = fst $ go 0 initialAmps
  where
   initialAmps :: [Maybe ProgState]
-  initialAmps = (`runInput` (0, 0, initialProg)) <$> config
+  initialAmps =
+    (snd . (`runStack` (0, 0, initialProg)) . Vector.singleton) <$> config
 
   go :: Int -> [Maybe ProgState] -> (Int, [Maybe ProgState])
   go sig (catMaybes -> []) = (sig, [])
@@ -34,9 +35,9 @@ thrustPropagated initialProg config = fst $ go 0 initialAmps
 
   runAmp :: Int -> Maybe ProgState -> (Int, Maybe ProgState)
   runAmp sig Nothing   = (sig, Nothing)
-  runAmp sig (Just st) = case runPropagate sig st of
-    Just (sigOut, stateOut) -> (sigOut, Just stateOut)
-    Nothing                 -> (sig, Nothing)
+  runAmp sig (Just st) = case runStack (Vector.singleton sig) st of
+    (sigOut, Just stateOut) -> (Vector.head sigOut, Just stateOut)
+    (sigOut, Nothing      ) -> (Vector.head sigOut, Nothing)
 
 main :: IO ()
 main = do

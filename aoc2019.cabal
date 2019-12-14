@@ -112,7 +112,19 @@ executable day10
   main-is:             Main.hs
   hs-source-dirs:      days/day10
 
+executable day11
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day11
+  build-depends:       aoc2019
+
 executable day12
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
   hs-source-dirs:      days/day12
+
+executable day13
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day13
+  build-depends:       aoc2019

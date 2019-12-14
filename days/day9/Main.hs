@@ -6,7 +6,8 @@ where
 import qualified Data.Text.IO                  as Text
 import qualified Data.Vector                   as Vector
 import           IntCode                                  ( parse
-                                                          , run
+                                                          , runStack
+                                                          , reserveMemory
                                                           )
 
 main :: IO ()
@@ -15,7 +16,7 @@ main = do
   let program = parse input
 
   putStr "part1: "
-  print $ fst $ run program (Vector.singleton 1)
+  print $ fst $ runStack (Vector.singleton 1) (0, 0, reserveMemory program 4096)
 
   putStr "part2: "
-  print $ fst $ run program (Vector.singleton 2)
+  print $ fst $ runStack (Vector.singleton 2) (0, 0, reserveMemory program 4096)

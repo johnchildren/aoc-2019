@@ -8,7 +8,7 @@ import qualified Data.Vector                   as Vector
 import qualified Data.List                     as List
 
 truncate3 :: Double -> Double
-truncate3 = (/ 10000) . fromIntegral . round . (* 10000)
+truncate3 = (/ 10000) . fromIntegral @Integer . round . (* 10000)
 
 mag :: (Int, Int) -> Double
 mag (x, y) = sqrt $ fromIntegral $ (x ^ 2) + (y ^ 2)
@@ -38,11 +38,13 @@ visibleAsteroids asteroids = map
 circularView :: (Int, Int) -> [(Int, Int)] -> [[(Int, Int)]]
 circularView (ox, oy) asteroids =
   let relativeLocations = (\(x, y) -> (x - ox, y - oy)) <$> asteroids
-  in  reverse
-        $ fmap (fmap fst . List.sortOn (\(_, v) -> mag v))
-        $ List.groupBy (\(_, v1) (_, v2) -> norm v1 == norm v2)
-        $ List.sortOn (\(_, (x, y)) -> atan2 (fromIntegral x) (fromIntegral y))
-        $ zip asteroids relativeLocations
+  in
+    reverse
+    $ fmap (fmap fst . List.sortOn (\(_, v) -> mag v))
+    $ List.groupBy (\(_, v1) (_, v2) -> norm v1 == norm v2)
+    $ List.sortOn
+        (\(_, (x, y)) -> atan2 @Double (fromIntegral x) (fromIntegral y))
+    $ zip asteroids relativeLocations
 
 parse :: String -> [(Int, Int)]
 parse s =

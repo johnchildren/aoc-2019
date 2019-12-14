@@ -1,12 +1,12 @@
 module IntCode
   ( parse
   , run
-  , runInput
-  , runOutput
-  , runPropagate
+  , runStack
+  , reserveMemory
   , ProgState
   , Pointer(..)
   , RelativeBase(..)
+  , Program
   )
 where
 
@@ -25,13 +25,13 @@ type Program = Vector Int
 type Updates = [(Pointer, Int)]
 
 newtype Pointer = Pointer Int
-  deriving newtype (Show, Num)
+  deriving newtype (Show, Num, Eq)
 
 newtype Offset = Offset Int
-  deriving newtype (Show, Num)
+  deriving newtype (Show, Num, Eq)
 
 newtype RelativeBase = RelativeBase Pointer
-  deriving newtype (Show, Num)
+  deriving newtype (Show, Num, Eq)
 
 type ProgState = (RelativeBase, Pointer, Program)
 
@@ -110,6 +110,7 @@ step p (Mul arg1 arg2 arg3) _ =
   (0, incPointer p 4, Nothing, [(arg3, arg1 * arg2)])
 step p (Input arg1) (Just input) =
   (0, incPointer p 2, Nothing, [(arg1, input)])
+step _ (Input _) Nothing = error "input instruction did not suspend for input"
 step p (Output arg1) _ = (0, incPointer p 2, Just arg1, [])
 step p (JumpIfTrue arg1 arg2) _ =
   (0, if arg1 /= 0 then Pointer arg2 else incPointer p 3, Nothing, [])
@@ -124,7 +125,7 @@ step p (AdjustBase arg1) _ = (Offset arg1, incPointer p 2, Nothing, [])
 run :: Program -> Input -> (Output, Program)
 run initialProg input =
   let (_, o, finalProg) =
-          go 0 0 (input, Vector.empty, reserveMemory initialProg 2048)
+          go 0 0 (input, Vector.empty, reserveMemory initialProg 4096)
   in  (o, finalProg)
  where
   go
@@ -148,48 +149,31 @@ run initialProg input =
         newP
         (i, o `Vector.snoc` output, updateProgram prog updates)
 
--- run with a single input until that input has been read or
--- the program terminates
-runInput :: Int -> ProgState -> Maybe ProgState
-runInput input (initialB, initialP, initialProg) = go
-  initialB
-  initialP
-  (reserveMemory initialProg 2048)
+-- Run until every input in the stack is consumed and
+-- the next input is requested or the program terminates
+runStack :: Input -> ProgState -> (Output, Maybe ProgState)
+runStack initialInput initialState = (\(_, o, s) -> (o, s)) $ go initialInput Vector.empty initialState
  where
-  go :: RelativeBase -> Pointer -> Program -> Maybe ProgState
-  go _ _ (Vector.null -> True     ) = Nothing
-  go _ p (readInstr p -> Terminate) = Nothing
-  go b p prog@(evalInstr prog b . readInstr p -> instr@(Input _)) =
-    let (bOffset, newP, _, updates) = step p instr (Just input)
-    in  Just (incBase b bOffset, newP, updateProgram prog updates)
-  go b p prog@(evalInstr prog b . readInstr p -> instr) =
+  go :: Input -> Output -> ProgState -> (Input, Output, Maybe ProgState)
+  go input output (_, _, (Vector.null -> True)     ) = (input, output, Nothing)
+  go input output (_, p, (readInstr p -> Terminate)) = (input, output, Nothing)
+  go input@(Vector.null -> True) output (b, p, prog@(readInstr p -> (Input _)))
+    = (input, output, Just (b, p, prog))
+  go input output (b, p, prog@(evalInstr prog b . readInstr p -> instr@(Input _)))
+    = let (bOffset, newP, _, updates) = step p instr (Just (Vector.head input))
+      in  go (Vector.tail input)
+             output
+             ((incBase b bOffset), newP, (updateProgram prog updates))
+  go input output (b, p, prog@(evalInstr prog b . readInstr p -> instr)) =
     case step p instr Nothing of
-      (bOffset, newP, Nothing, updates) ->
-        go (incBase b bOffset) newP (updateProgram prog updates)
-      (_, _, Just _, _) -> error "unexpected output"
-
--- run with a single input until a single output is received or
--- the program terminates
-runOutput :: ProgState -> Maybe (Int, ProgState)
-runOutput (initialB, initialP, initialProg) = go
-  initialB
-  initialP
-  (reserveMemory initialProg 2048)
- where
-  go :: RelativeBase -> Pointer -> Program -> Maybe (Int, ProgState)
-  go _ _ (Vector.null -> True     ) = Nothing
-  go _ p (readInstr p -> Terminate) = Nothing
-  go b p prog@(evalInstr prog b . readInstr p -> instr) =
-    case step p instr Nothing of
-      (bOffset, newP, Nothing, updates) ->
-        go (incBase b bOffset) newP (updateProgram prog updates)
-      (bOffset, newP, Just output, updates) ->
-        Just (output, (incBase b bOffset, newP, updateProgram prog updates))
-
--- run with a single input until a single output is received or
--- the program terminates
-runPropagate :: Int -> ProgState -> Maybe (Int, ProgState)
-runPropagate input state = runInput input state >>= runOutput
+      (bOffset, newP, Nothing, updates) -> go
+        input
+        output
+        ((incBase b bOffset), newP, (updateProgram prog updates))
+      (bOffset, newP, Just out, updates) -> go
+        input
+        (output `Vector.snoc` out)
+        ((incBase b bOffset), newP, (updateProgram prog updates))
 
 readArg :: Program -> Pointer -> Offset -> Int -> Mode
 readArg prog p offset@(Offset o) codes =
@@ -200,7 +184,7 @@ readArg prog p offset@(Offset o) codes =
     n -> error ("unknown mode code: " ++ show n)
 
 readWriteLocation :: Program -> Pointer -> Offset -> Int -> WriteLocation
-readWriteLocation prog p offset codes = case readArg prog p offset codes of
+readWriteLocation prog pointer offset codes = case readArg prog pointer offset codes of
   Position p -> WritePosition p
   Relative r -> WriteRelative r
   _          -> error "cannot write to non positional or relative argument"

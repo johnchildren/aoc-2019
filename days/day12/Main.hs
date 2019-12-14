@@ -29,18 +29,18 @@ applyGravity system = Vector.map
   (\m -> m
     { _vx =
       _vx m
-        + ( Vector.sum
-          $ Vector.map (\t -> velocityAdjustment (_px m) (_px t)) system
+        + Vector.sum
+          ( Vector.map (velocityAdjustment (_px m) . _px) system
           )
     , _vy =
       _vy m
-        + ( Vector.sum
-          $ Vector.map (\t -> velocityAdjustment (_py m) (_py t)) system
+        + Vector.sum
+          ( Vector.map (velocityAdjustment (_py m) . _py) system
           )
     , _vz =
       _vz m
-        + ( Vector.sum
-          $ Vector.map (\t -> velocityAdjustment (_pz m) (_pz t)) system
+        + Vector.sum
+          ( Vector.map (velocityAdjustment (_pz m) . _pz) system
           )
     }
   )
