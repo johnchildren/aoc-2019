@@ -24,7 +24,7 @@ thrustPropagated initialProg config = fst $ go 0 initialAmps
  where
   initialAmps :: [Maybe ProgState]
   initialAmps =
-    (snd . (`runStack` (0, 0, initialProg)) . Vector.singleton) <$> config
+    snd . (`runStack` (0, 0, initialProg)) . Vector.singleton <$> config
 
   go :: Int -> [Maybe ProgState] -> (Int, [Maybe ProgState])
   go sig (catMaybes -> []) = (sig, [])

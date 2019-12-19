@@ -7,6 +7,8 @@ module IntCode
   , Pointer(..)
   , RelativeBase(..)
   , Program
+  , Input
+  , Output
   )
 where
 
@@ -152,7 +154,8 @@ run initialProg input =
 -- Run until every input in the stack is consumed and
 -- the next input is requested or the program terminates
 runStack :: Input -> ProgState -> (Output, Maybe ProgState)
-runStack initialInput initialState = (\(_, o, s) -> (o, s)) $ go initialInput Vector.empty initialState
+runStack initialInput initialState = (\(_, o, s) -> (o, s))
+  $ go initialInput Vector.empty initialState
  where
   go :: Input -> Output -> ProgState -> (Input, Output, Maybe ProgState)
   go input output (_, _, (Vector.null -> True)     ) = (input, output, Nothing)
@@ -184,10 +187,11 @@ readArg prog p offset@(Offset o) codes =
     n -> error ("unknown mode code: " ++ show n)
 
 readWriteLocation :: Program -> Pointer -> Offset -> Int -> WriteLocation
-readWriteLocation prog pointer offset codes = case readArg prog pointer offset codes of
-  Position p -> WritePosition p
-  Relative r -> WriteRelative r
-  _          -> error "cannot write to non positional or relative argument"
+readWriteLocation prog pointer offset codes =
+  case readArg prog pointer offset codes of
+    Position p -> WritePosition p
+    Relative r -> WriteRelative r
+    _          -> error "cannot write to non positional or relative argument"
 
 readValue :: Program -> Pointer -> Offset -> Int
 readValue prog (Pointer p) (Offset o) = case prog !? (p + o) of

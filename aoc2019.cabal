@@ -23,7 +23,7 @@ common haskell
     DeriveFunctor
     DerivingStrategies
     GADTs
-    GeneralizedNewtypeDeriving 
+    GeneralizedNewtypeDeriving
     LambdaCase
     OverloadedStrings
     StandaloneDeriving
@@ -127,4 +127,26 @@ executable day13
   import:              haskell, dependencies, warning-flags
   main-is:             Main.hs
   hs-source-dirs:      days/day13
+  build-depends:       aoc2019
+
+executable day14
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day14
+
+executable day15
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day15
+  build-depends:       aoc2019
+
+executable day16
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day16
+
+executable day17
+  import:              haskell, dependencies, warning-flags
+  main-is:             Main.hs
+  hs-source-dirs:      days/day17
   build-depends:       aoc2019

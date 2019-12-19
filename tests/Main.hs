@@ -6,8 +6,7 @@ where
 import qualified Data.Vector                   as Vector
 import           Test.Tasty
 import           Test.Tasty.HUnit
-import           IntCode                                  ( runStack
-                                                          )
+import           IntCode                                  ( runStack )
 
 main :: IO ()
 main = defaultMain tests

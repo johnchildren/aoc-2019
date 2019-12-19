@@ -28,29 +28,18 @@ applyGravity :: System -> System
 applyGravity system = Vector.map
   (\m -> m
     { _vx =
-      _vx m
-        + Vector.sum
-          ( Vector.map (velocityAdjustment (_px m) . _px) system
-          )
+      _vx m + Vector.sum (Vector.map (velocityAdjustment (_px m) . _px) system)
     , _vy =
-      _vy m
-        + Vector.sum
-          ( Vector.map (velocityAdjustment (_py m) . _py) system
-          )
+      _vy m + Vector.sum (Vector.map (velocityAdjustment (_py m) . _py) system)
     , _vz =
-      _vz m
-        + Vector.sum
-          ( Vector.map (velocityAdjustment (_pz m) . _pz) system
-          )
+      _vz m + Vector.sum (Vector.map (velocityAdjustment (_pz m) . _pz) system)
     }
   )
   system
 
 applyGravityVector :: Vector Int -> Vector Int -> Vector Int
-applyGravityVector ps vs = Vector.imap
-  (\i v -> v + (Vector.sum $ Vector.map (velocityAdjustment (ps Vector.! i)) ps)
-  )
-  vs
+applyGravityVector ps = Vector.imap
+  (\i v -> v + Vector.sum (Vector.map (velocityAdjustment (ps Vector.! i)) ps))
 
 applyVelocity :: System -> System
 applyVelocity = Vector.map
@@ -66,10 +55,10 @@ updateAxis axis =
   in  axis { _ps = nextPositions, _vs = nextVelocities }
 
 potentialEnergy :: Moon -> Int
-potentialEnergy m = (abs $ _px m) + (abs $ _py m) + (abs $ _pz m)
+potentialEnergy m = abs (_px m) + abs (_py m) + abs (_pz m)
 
 kineticEnergy :: Moon -> Int
-kineticEnergy m = (abs $ _vx m) + (abs $ _vy m) + (abs $ _vz m)
+kineticEnergy m = abs (_vx m) + abs (_vy m) + abs (_vz m)
 
 totalEnergy :: Moon -> Int
 totalEnergy m = potentialEnergy m * kineticEnergy m
