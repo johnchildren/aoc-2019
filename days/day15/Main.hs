@@ -112,8 +112,7 @@ findValidSteps
   -> [(Coordinate, [MoveCommand], ProgState)]
   -> [(Coordinate, [MoveCommand], ProgState)]
 findValidSteps visited = filter
-        (\(pos, commands, _) -> Set.notMember (move pos $ head commands) visited
-        )
+  (\(pos, commands, _) -> Set.notMember (move pos $ head commands) visited)
 
 nextSteps
   :: [(Coordinate, [MoveCommand], ProgState)]
